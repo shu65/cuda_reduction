@@ -9,11 +9,6 @@
       "type": "cuda-gdb",
       "request": "launch",
       "program": "${workspaceFolder}/main"
-    },
-    {
-      "name": "CUDA C++: Attach",
-      "type": "cuda-gdb",
-      "request": "attach"
     }
   ]
 }

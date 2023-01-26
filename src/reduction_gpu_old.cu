@@ -43,7 +43,7 @@ __device__ void warpReduce(volatile int* sdata, int tid) {
     }
 }
 
-__global__ void reduce_gpu_old_v1_kernel(const int *g_in, size_t n, int*g_out){
+__global__ void reduce_gpu_old_v1_kernel(const int *g_in, size_t n, int *g_out){
     extern __shared__ int sdata[];
     int tid = threadIdx.x;
     int i = blockIdx.x*blockDim.x + threadIdx.x;
@@ -222,13 +222,20 @@ __global__ void reduce_gpu_old_v6_kernel(const int *g_in, size_t n, int*g_out){
 
     __syncthreads();
 
-    for (unsigned int s=blockDim.x/2; s>warpSize; s>>=1) {
+    for (unsigned int s=blockDim.x/2; s>512; s>>=1) {
         if (tid < s) {
             sdata[tid] += sdata[tid + s];
         }
         __syncthreads();
     }
-    if (tid < warpSize) {
+    if (blockSize >= 512) {
+        if (tid < 256) { sdata[tid] += sdata[tid + 256]; } __syncthreads(); }
+    if (blockSize >= 256) {
+        if (tid < 128) { sdata[tid] += sdata[tid + 128]; } __syncthreads(); }
+    if (blockSize >= 128) {
+        if (tid < 64) { sdata[tid] += sdata[tid + 64]; } __syncthreads(); }
+    assert(warpSize==32);
+    if (tid < 32) {
         warpReduce<blockSize>(sdata, tid);
     }
     if (tid == 0) {
@@ -238,8 +245,58 @@ __global__ void reduce_gpu_old_v6_kernel(const int *g_in, size_t n, int*g_out){
 
 int reduce_gpu_old_v6(const int *d_in, int *h_tmp_out, int *d_tmp_out, size_t n, int n_blocks, int n_threads) {
     assert(512==n_threads);
-    reduce_gpu_old_v5_kernel<512><<<n_blocks, n_threads, sizeof(int)*n_threads>>>(d_in, n, d_tmp_out);
+    reduce_gpu_old_v6_kernel<512><<<n_blocks, n_threads, sizeof(int)*n_threads>>>(d_in, n, d_tmp_out);
     checkCudaErrors(cudaMemcpy(h_tmp_out, d_tmp_out, sizeof(int)*n_blocks, cudaMemcpyDefault));
     int ret = reduce(h_tmp_out, n_blocks);
+    return ret;
+}
+
+template <uint32_t blockSize>
+__global__ void reduce_gpu_old_v7_kernel(const int *g_in, size_t n, int*g_out){
+    extern __shared__ int sdata[];
+    int tid = threadIdx.x;
+    int i = blockIdx.x*(blockDim.x*2) + threadIdx.x;
+    int grid_size = 2*blockDim.x * gridDim.x;
+    int sum_value = 0;
+
+    while (i < n) {
+      sum_value += g_in[i];
+      if ((i + blockSize) < n) {
+        sum_value += g_in[i + blockSize];
+      }
+      i += grid_size;
+    }
+
+    sdata[tid] = sum_value;
+
+    __syncthreads();
+
+    for (unsigned int s=blockDim.x/2; s>512; s>>=1) {
+        if (tid < s) {
+            sdata[tid] += sdata[tid + s];
+        }
+        __syncthreads();
+    }
+    if (blockSize >= 512) {
+        if (tid < 256) { sdata[tid] += sdata[tid + 256]; } __syncthreads(); }
+    if (blockSize >= 256) {
+        if (tid < 128) { sdata[tid] += sdata[tid + 128]; } __syncthreads(); }
+    if (blockSize >= 128) {
+        if (tid < 64) { sdata[tid] += sdata[tid + 64]; } __syncthreads(); }
+    assert(warpSize==32);
+    if (tid < 32) {
+        warpReduce<blockSize>(sdata, tid);
+    }
+    if (tid == 0) {
+        g_out[blockIdx.x] = sdata[0];
+    } 
+}
+
+int reduce_gpu_old_v7(const int *d_in, int *h_tmp_out, int *d_tmp_out, size_t n, int n_blocks, int n_threads) {
+    size_t n_blocks_v7 = 128;
+    assert(512==n_threads);
+    reduce_gpu_old_v7_kernel<512><<<n_blocks_v7, n_threads, sizeof(int)*n_threads>>>(d_in, n, d_tmp_out);
+    checkCudaErrors(cudaMemcpy(h_tmp_out, d_tmp_out, sizeof(int)*n_blocks_v7, cudaMemcpyDefault));
+    int ret = reduce(h_tmp_out, n_blocks_v7);
     return ret;
 }

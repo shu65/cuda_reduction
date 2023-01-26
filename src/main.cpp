@@ -129,7 +129,8 @@ int runReduceFunc(
         n_threads
       );
     }
-    case 5:
+    break;
+  case 5:
     if (old) {
       ret = reduce_gpu_old_v5(
         d_in,
@@ -140,7 +141,21 @@ int runReduceFunc(
         n_threads
       );
     } else {
-      ret = reduce_gpu_v5(
+      assert(false);
+    }
+    break;  
+  case 6:
+    if (old) {
+      ret = reduce_gpu_old_v6(
+        d_in,
+        h_tmp_out,
+        d_tmp_out,
+        n,
+        n_blocks,
+        n_threads
+      );
+    } else {
+      ret = reduce_gpu_v6(
         d_in,
         h_tmp_out,
         d_tmp_out,
@@ -149,6 +164,58 @@ int runReduceFunc(
         n_threads
       );
     }
+    break;
+  case 7:
+    if (old) {
+      ret = reduce_gpu_old_v7(
+        d_in,
+        h_tmp_out,
+        d_tmp_out,
+        n,
+        n_blocks,
+        n_threads
+      );
+    } else {
+      ret = reduce_gpu_v7(
+        d_in,
+        h_tmp_out,
+        d_tmp_out,
+        n,
+        n_blocks,
+        n_threads
+      );
+    }
+    break;
+  case 8:
+    if (old) {
+      assert(false);
+    } else {
+      ret = reduce_gpu_v8(
+        d_in,
+        h_tmp_out,
+        d_tmp_out,
+        n,
+        n_blocks,
+        n_threads
+      );
+    }
+    break;
+  case 9:
+    if (old) {
+      assert(false);
+    } else {
+      ret = reduce_gpu_v9(
+        d_in,
+        h_tmp_out,
+        d_tmp_out,
+        n,
+        n_blocks,
+        n_threads
+      );
+    }
+    break;
+  default:
+    assert(false);
     break;
   }
   return ret;
@@ -203,7 +270,7 @@ double reduceBenchmark(
 int main(int argc, char *argv[])
 {
   const int n_trials = 100;
-  const int n_blocks = 256;
+  const int n_blocks = 512;
   const int n_threads = 512;
   const int n = n_blocks * n_threads;
   const size_t array_size = sizeof(int) * n;
@@ -214,7 +281,7 @@ int main(int argc, char *argv[])
 
   for (int i = 0; i < n; ++i)
   {
-    h_in[i] = i;
+    h_in[i] = 1;
   }
 
   int device;
@@ -249,6 +316,22 @@ int main(int argc, char *argv[])
   }
   bool old = false;
   double elapsed_time_msec;
+  // "dummy gpu call"
+  elapsed_time_msec = reduceBenchmark(
+    0, 
+    old, 
+    h_in.data(), 
+    d_in, 
+    h_tmp_out.data(), 
+    d_tmp_out, 
+    h_in.size(), 
+    n_blocks, 
+    n_threads, 
+    n_trials, 
+    expected_value,
+    false
+  );
+  // cpu
   elapsed_time_msec = reduceBenchmark(
     0, 
     old, 
@@ -264,24 +347,75 @@ int main(int argc, char *argv[])
     true
   );
   vector<bool> old_flags = {true, false};
-  for (int kernel_id = 1; kernel_id < 6; ++kernel_id) {
-    for (int old_i = 0; old_i < 2; ++old_i) {
-      old = old_flags[old_i];
-      elapsed_time_msec = reduceBenchmark(
-        kernel_id, 
-        old, 
-        h_in.data(), 
-        d_in, 
-        h_tmp_out.data(), 
-        d_tmp_out, 
-        h_in.size(), 
-        n_blocks, 
-        n_threads, 
-        n_trials, 
-        expected_value,
-        true
-      );
+  old = true; 
+  for (int kernel_id = 1; kernel_id < 8; ++kernel_id) {
+    // dummy 
+        elapsed_time_msec = reduceBenchmark(
+      kernel_id, 
+      old, 
+      h_in.data(), 
+      d_in, 
+      h_tmp_out.data(), 
+      d_tmp_out, 
+      h_in.size(), 
+      n_blocks, 
+      n_threads, 
+      n_trials, 
+      expected_value,
+      false
+    );
+
+    elapsed_time_msec = reduceBenchmark(
+      kernel_id, 
+      old, 
+      h_in.data(), 
+      d_in, 
+      h_tmp_out.data(), 
+      d_tmp_out, 
+      h_in.size(), 
+      n_blocks, 
+      n_threads, 
+      n_trials, 
+      expected_value,
+      true
+    );
+  }
+
+  old = false; 
+  for (int kernel_id = 1; kernel_id < 10; ++kernel_id) {
+    if (kernel_id == 5) {
+      continue;
     }
+    // dummy 
+    elapsed_time_msec = reduceBenchmark(
+      kernel_id, 
+      old, 
+      h_in.data(), 
+      d_in, 
+      h_tmp_out.data(), 
+      d_tmp_out, 
+      h_in.size(), 
+      n_blocks, 
+      n_threads, 
+      n_trials, 
+      expected_value,
+      false
+    );
+
+    elapsed_time_msec = reduceBenchmark(
+      kernel_id, 
+      old, 
+      h_in.data(), 
+      d_in, 
+      h_tmp_out.data(), 
+      d_tmp_out, 
+      h_in.size(), 
+      n_blocks, 
+      n_threads, 
+      n_trials, 
+      expected_value,
+      true
+    );
   }
 
   // free device memory
