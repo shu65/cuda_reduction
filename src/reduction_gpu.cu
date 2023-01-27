@@ -82,7 +82,7 @@ __global__ void reduce_gpu_v2_kernel(const int *g_in, size_t n, int *g_out)
 
     for (uint32_t s = 1; s < blockDim.x; s *= 2)
     {
-        uint32_t index = 2 * s * tid;
+        uint32_t index = 2 * tid * s ;
         if (index < blockDim.x)
         {
             sdata[index] += sdata[index + s];

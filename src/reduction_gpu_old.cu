@@ -17,34 +17,47 @@ template <uint32_t kBlockSize>
 __device__ void warpReduce(volatile int *sdata, int tid)
 {
     assert(warpSize == 32);
+    int v = sdata[tid];
     if (kBlockSize >= 64)
     {
-        sdata[tid] += sdata[tid + 32];
+        v += sdata[tid + 32];
+        __syncwarp();
+        sdata[tid] = v;
         __syncwarp();
     }
     if (kBlockSize >= 32)
     {
-        sdata[tid] += sdata[tid + 16];
+        v += sdata[tid + 16];
+        __syncwarp();
+        sdata[tid] = v;
         __syncwarp();
     }
     if (kBlockSize >= 16)
     {
-        sdata[tid] += sdata[tid + 8];
+        v += sdata[tid + 8];
+        __syncwarp();
+        sdata[tid] = v;
         __syncwarp();
     }
     if (kBlockSize >= 8)
     {
-        sdata[tid] += sdata[tid + 4];
+        v += sdata[tid + 4];
+        __syncwarp();
+        sdata[tid] = v;
         __syncwarp();
     }
     if (kBlockSize >= 4)
     {
-        sdata[tid] += sdata[tid + 2];
+        v += sdata[tid + 2];
+        __syncwarp();
+        sdata[tid] = v;
         __syncwarp();
     }
     if (kBlockSize >= 2)
     {
-        sdata[tid] += sdata[tid + 1];
+        v += sdata[tid + 1];
+        __syncwarp();
+        sdata[tid] = v;
         __syncwarp();
     }
 }

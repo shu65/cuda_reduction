@@ -289,7 +289,7 @@ double reduceBenchmark(
 int main(int argc, char *argv[])
 {
   const int n_trials = 100;
-  const int n_blocks = 512;
+  const int n_blocks = 1 << 16;
   const int n_threads = 512;
   const int n = n_blocks * n_threads;
   const size_t array_size = sizeof(int) * n;
