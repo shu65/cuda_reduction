@@ -437,5 +437,8 @@ int main(int argc, char *argv[])
   // free device memory
   checkCudaErrors(cudaFree(d_in));
   d_in = nullptr;
+  checkCudaErrors(cudaFree(d_tmp_out));
+  d_tmp_out = nullptr;
+
   return 0;
 }

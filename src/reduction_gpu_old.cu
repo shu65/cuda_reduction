@@ -198,9 +198,10 @@ __global__ void reduce_gpu_old_v4_kernel(const int *g_in, size_t n, int *g_out)
 
 int reduce_gpu_old_v4(const int *d_in, int *h_tmp_out, int *d_tmp_out, size_t n, int n_blocks, int n_threads)
 {
-    reduce_gpu_old_v4_kernel<<<n_blocks, n_threads, sizeof(int) * n_threads>>>(d_in, n, d_tmp_out);
-    checkCudaErrors(cudaMemcpy(h_tmp_out, d_tmp_out, sizeof(int) * n_blocks, cudaMemcpyDefault));
-    int ret = reduce(h_tmp_out, n_blocks);
+    int n_blocks_v4 = n_blocks / 2;
+    reduce_gpu_old_v4_kernel<<<n_blocks_v4, n_threads, sizeof(int) * n_threads>>>(d_in, n, d_tmp_out);
+    checkCudaErrors(cudaMemcpy(h_tmp_out, d_tmp_out, sizeof(int) * n_blocks_v4, cudaMemcpyDefault));
+    int ret = reduce(h_tmp_out, n_blocks_v4);
     return ret;
 }
 
@@ -244,9 +245,10 @@ __global__ void reduce_gpu_old_v5_kernel(const int *g_in, size_t n, int *g_out)
 int reduce_gpu_old_v5(const int *d_in, int *h_tmp_out, int *d_tmp_out, size_t n, int n_blocks, int n_threads)
 {
     assert(512 == n_threads);
-    reduce_gpu_old_v5_kernel<512><<<n_blocks, n_threads, sizeof(int) * n_threads>>>(d_in, n, d_tmp_out);
-    checkCudaErrors(cudaMemcpy(h_tmp_out, d_tmp_out, sizeof(int) * n_blocks, cudaMemcpyDefault));
-    int ret = reduce(h_tmp_out, n_blocks);
+    int n_blocks_v4 = n_blocks / 2;
+    reduce_gpu_old_v5_kernel<512><<<n_blocks_v4, n_threads, sizeof(int) * n_threads>>>(d_in, n, d_tmp_out);
+    checkCudaErrors(cudaMemcpy(h_tmp_out, d_tmp_out, sizeof(int) * n_blocks_v4, cudaMemcpyDefault));
+    int ret = reduce(h_tmp_out, n_blocks_v4);
     return ret;
 }
 
@@ -315,9 +317,10 @@ __global__ void reduce_gpu_old_v6_kernel(const int *g_in, size_t n, int *g_out)
 int reduce_gpu_old_v6(const int *d_in, int *h_tmp_out, int *d_tmp_out, size_t n, int n_blocks, int n_threads)
 {
     assert(512 == n_threads);
-    reduce_gpu_old_v6_kernel<512><<<n_blocks, n_threads, sizeof(int) * n_threads>>>(d_in, n, d_tmp_out);
-    checkCudaErrors(cudaMemcpy(h_tmp_out, d_tmp_out, sizeof(int) * n_blocks, cudaMemcpyDefault));
-    int ret = reduce(h_tmp_out, n_blocks);
+    int n_blocks_v4 = n_blocks / 2;
+    reduce_gpu_old_v6_kernel<512><<<n_blocks_v4, n_threads, sizeof(int) * n_threads>>>(d_in, n, d_tmp_out);
+    checkCudaErrors(cudaMemcpy(h_tmp_out, d_tmp_out, sizeof(int) * n_blocks_v4, cudaMemcpyDefault));
+    int ret = reduce(h_tmp_out, n_blocks_v4);
     return ret;
 }
 
